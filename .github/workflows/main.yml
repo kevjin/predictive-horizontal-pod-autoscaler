@@ -21,10 +21,9 @@ jobs:
         # Get golint
         export PATH=$PATH:$(go env GOPATH)/bin
         GO111MODULE=off go get -u golang.org/x/lint/golint
-        # Lint and test
         go mod vendor
-        # make lint
-        # make unittest
+        pip install -r requirements-dev.txt
+        pip install -r algorithms/requirements.txt
         make docker
     - name: Login to DockerHub
       uses: docker/login-action@v1
