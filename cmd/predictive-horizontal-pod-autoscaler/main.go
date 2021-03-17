@@ -159,6 +159,7 @@ func setup(predictiveConfig *config.Config) {
 }
 
 func getEvaluation(stdin io.Reader, predictiveConfig *config.Config) {
+	fmt.Print(string(stdin))
 	// Open DB connection
 	db, err := sql.Open("sqlite3", predictiveConfig.DBPath)
 	if err != nil {
