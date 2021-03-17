@@ -1,4 +1,4 @@
-REGISTRY = jthomperoo
+REGISTRY = kevjin
 NAME = predictive-horizontal-pod-autoscaler
 VERSION = latest
 
