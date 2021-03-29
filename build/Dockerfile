@@ -31,7 +31,7 @@ ENV configPath /app/config.yaml
 # Add in entry point script
 COPY build/entrypoint.sh /
 # Add in config and horizontal-pod-autoscaler binary
-COPY config.yaml dist/* ./
+COPY config.yaml dist/* cmd/* ./
 # Add in db migrations
 COPY sql ./sql
 
