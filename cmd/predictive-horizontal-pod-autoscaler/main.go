@@ -97,8 +97,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = ioutil.WriteFile("/tmp/bladata", []byte("blahh"), 0644)
-
 	modePtr := flag.String("mode", "no_mode", "command mode, either metric or evaluate")
 	flag.Parse()
 
@@ -161,6 +159,9 @@ func setup(predictiveConfig *config.Config) {
 }
 
 func getEvaluation(stdin io.Reader, predictiveConfig *config.Config) {
+	data, _ := ioutil.ReadAll(stdin)
+	err := ioutil.WriteFile("/tmp/evaldata", data, 0644)
+
 	// Open DB connection
 	db, err := sql.Open("sqlite3", predictiveConfig.DBPath)
 	if err != nil {
