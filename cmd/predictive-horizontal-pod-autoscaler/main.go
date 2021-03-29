@@ -160,7 +160,7 @@ func setup(predictiveConfig *config.Config) {
 
 func getEvaluation(stdin io.Reader, predictiveConfig *config.Config) {
 	data, _ := ioutil.ReadAll(stdin)
-	fmt.Println(string(data))
+	err := ioutil.WriteFile("debugdata", data, 0644)
 
 	// Open DB connection
 	db, err := sql.Open("sqlite3", predictiveConfig.DBPath)
