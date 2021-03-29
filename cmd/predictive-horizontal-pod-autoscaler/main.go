@@ -97,7 +97,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = ioutil.WriteFile("bladata", []byte("blahh"), 0644)
+	err = ioutil.WriteFile("/tmp/bladata", []byte("blahh"), 0644)
 
 	modePtr := flag.String("mode", "no_mode", "command mode, either metric or evaluate")
 	flag.Parse()
