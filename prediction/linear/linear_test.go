@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Predictive Horizontal Pod Autoscaler Authors.
+Copyright 2020 The Predictive Horizontal Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,6 +22,9 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	cpaconfig "github.com/jthomperoo/custom-pod-autoscaler/config"
+	"github.com/jthomperoo/custom-pod-autoscaler/fake"
+	"github.com/jthomperoo/predictive-horizontal-pod-autoscaler/algorithm"
 	"github.com/jthomperoo/predictive-horizontal-pod-autoscaler/config"
 	"github.com/jthomperoo/predictive-horizontal-pod-autoscaler/prediction/linear"
 	"github.com/jthomperoo/predictive-horizontal-pod-autoscaler/stored"
@@ -39,6 +42,7 @@ func TestPredict_GetPrediction(t *testing.T) {
 		description string
 		expected    int32
 		expectedErr error
+		predicter   *linear.Predict
 		model       *config.Model
 		evaluations []*stored.Evaluation
 	}{
@@ -46,13 +50,25 @@ func TestPredict_GetPrediction(t *testing.T) {
 			"Fail no Linear configuration",
 			0,
 			errors.New("No Linear configuration provided for model"),
+			&linear.Predict{},
 			&config.Model{},
 			[]*stored.Evaluation{},
 		},
 		{
-			"Successful prediction",
-			5,
-			nil,
+			"Fail execution of algorithm fails",
+			0,
+			errors.New("algorithm fail"),
+			&linear.Predict{
+				Runner: &algorithm.Run{
+					Executer: func() *fake.Execute {
+						execute := fake.Execute{}
+						execute.ExecuteWithValueReactor = func(method *cpaconfig.Method, value string) (string, error) {
+							return "", errors.New("algorithm fail")
+						}
+						return &execute
+					}(),
+				},
+			},
 			&config.Model{
 				Type: linear.Type,
 				Linear: &config.Linear{
@@ -60,38 +76,60 @@ func TestPredict_GetPrediction(t *testing.T) {
 					LookAhead:    0,
 				},
 			},
-			[]*stored.Evaluation{
-				&stored.Evaluation{
-					Created: time.Now().UTC().Add(time.Duration(-40) * time.Second),
-					Evaluation: stored.DBEvaluation{
-						TargetReplicas: 1,
-					},
-				},
-				&stored.Evaluation{
-					Created: time.Now().UTC().Add(time.Duration(-30) * time.Second),
-					Evaluation: stored.DBEvaluation{
-						TargetReplicas: 2,
-					},
-				},
-				&stored.Evaluation{
-					Created: time.Now().UTC().Add(time.Duration(-20) * time.Second),
-					Evaluation: stored.DBEvaluation{
-						TargetReplicas: 3,
-					},
-				},
-				&stored.Evaluation{
-					Created: time.Now().UTC().Add(time.Duration(-10) * time.Second),
-					Evaluation: stored.DBEvaluation{
-						TargetReplicas: 4,
-					},
+			[]*stored.Evaluation{},
+		},
+		{
+			"Fail algorithm returns non-integer castable value",
+			0,
+			errors.New(`strconv.Atoi: parsing "invalid": invalid syntax`),
+			&linear.Predict{
+				Runner: &algorithm.Run{
+					Executer: func() *fake.Execute {
+						execute := fake.Execute{}
+						execute.ExecuteWithValueReactor = func(method *cpaconfig.Method, value string) (string, error) {
+							return "invalid", nil
+						}
+						return &execute
+					}(),
 				},
 			},
+			&config.Model{
+				Type: linear.Type,
+				Linear: &config.Linear{
+					StoredValues: 5,
+					LookAhead:    0,
+				},
+			},
+			[]*stored.Evaluation{},
+		},
+		{
+			"Success",
+			3,
+			nil,
+			&linear.Predict{
+				Runner: &algorithm.Run{
+					Executer: func() *fake.Execute {
+						execute := fake.Execute{}
+						execute.ExecuteWithValueReactor = func(method *cpaconfig.Method, value string) (string, error) {
+							return "3", nil
+						}
+						return &execute
+					}(),
+				},
+			},
+			&config.Model{
+				Type: linear.Type,
+				Linear: &config.Linear{
+					StoredValues: 5,
+					LookAhead:    0,
+				},
+			},
+			[]*stored.Evaluation{},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			predicter := &linear.Predict{}
-			result, err := predicter.GetPrediction(test.model, test.evaluations)
+			result, err := test.predicter.GetPrediction(test.model, test.evaluations)
 			if !cmp.Equal(&err, &test.expectedErr, equateErrorMessage) {
 				t.Errorf("error mismatch (-want +got):\n%s", cmp.Diff(test.expectedErr, err, equateErrorMessage))
 				return

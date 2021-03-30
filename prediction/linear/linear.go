@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Predictive Horizontal Pod Autoscaler Authors.
+Copyright 2020 The Predictive Horizontal Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,18 +17,25 @@ limitations under the License.
 package linear
 
 import (
+	"encoding/json"
 	"errors"
-	"math"
 	"sort"
-	"time"
+	"strconv"
 
+	"github.com/jthomperoo/predictive-horizontal-pod-autoscaler/algorithm"
 	"github.com/jthomperoo/predictive-horizontal-pod-autoscaler/config"
 	"github.com/jthomperoo/predictive-horizontal-pod-autoscaler/stored"
-	"gonum.org/v1/gonum/stat"
 )
 
 // Type linear is the type of the linear predicter
 const Type = "Linear"
+
+const algorithmPath = "/app/algorithms/linear_regression/linear_regression.py"
+
+type linearRegressionParameters struct {
+	LookAhead   int                  `json:"lookAhead"`
+	Evaluations []*stored.Evaluation `json:"evaluations"`
+}
 
 // Config represents a linear regression prediction model configuration
 type Config struct {
@@ -37,7 +44,9 @@ type Config struct {
 }
 
 // Predict provides logic for using Linear Regression to make a prediction
-type Predict struct{}
+type Predict struct {
+	Runner algorithm.Runner
+}
 
 // GetPrediction uses a linear regression to predict what the replica count should be based on historical evaluations
 func (p *Predict) GetPrediction(model *config.Model, evaluations []*stored.Evaluation) (int32, error) {
@@ -45,39 +54,25 @@ func (p *Predict) GetPrediction(model *config.Model, evaluations []*stored.Evalu
 		return 0, errors.New("No Linear configuration provided for model")
 	}
 
-	length := len(evaluations)
-	lookAhead := time.Now().UTC().Add(time.Duration(model.Linear.LookAhead) * time.Millisecond)
-
-	var data = struct {
-		x []float64
-		y []float64
-	}{
-		x: make([]float64, length),
-		y: make([]float64, length),
+	parameters, err := json.Marshal(linearRegressionParameters{
+		LookAhead:   model.Linear.LookAhead,
+		Evaluations: evaluations,
+	})
+	if err != nil {
+		// Should not occur, panic
+		panic(err)
 	}
 
-	var max float64
-
-	// Determine latest timestamp
-	for i, savedEvaluation := range evaluations {
-		timestamp := float64(savedEvaluation.Created.Unix())
-		if i == 0 || max < timestamp {
-			max = timestamp
-		}
+	value, err := p.Runner.RunAlgorithmWithValue(algorithmPath, string(parameters))
+	if err != nil {
+		return 0, err
 	}
 
-	// Build up data for linear model, in order to not deal with huge values and get rounding errors, use the difference between
-	// the time being searched for and the metric recorded time in seconds
-	for i, savedEvaluation := range evaluations {
-		data.x[i] = float64(lookAhead.Unix() - savedEvaluation.Created.Unix())
-		data.y[i] = float64(savedEvaluation.Evaluation.TargetReplicas)
+	prediction, err := strconv.Atoi(value)
+	if err != nil {
+		return 0, err
 	}
 
-	// Build model
-	beta, alpha := stat.LinearRegression(data.x, data.y, nil, false)
-	// Make prediction using y = alpha + (beta/maximum) * x
-	// Round up
-	prediction := math.Ceil(alpha + (beta/max)*float64(lookAhead.Unix()))
 	return int32(prediction), nil
 }
 
