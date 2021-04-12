@@ -19,4 +19,4 @@ echo "Setting up local database"
 /app/predictive-horizontal-pod-autoscaler -mode=setup
 
 echo "Starting autoscaler"
-exec /cpa/custom-pod-autoscaler
+exec /app/custom-pod-autoscaler
