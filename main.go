@@ -55,6 +55,7 @@ import (
 	"github.com/jthomperoo/predictive-horizontal-pod-autoscaler/prediction"
 	"github.com/jthomperoo/predictive-horizontal-pod-autoscaler/prediction/holtwinters"
 	"github.com/jthomperoo/predictive-horizontal-pod-autoscaler/prediction/linear"
+	"github.com/jthomperoo/predictive-horizontal-pod-autoscaler/prediction/knn"
 	"github.com/jthomperoo/predictive-horizontal-pod-autoscaler/stored"
 	_ "github.com/mattn/go-sqlite3" // Driver for sqlite3 database	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -226,6 +227,9 @@ func getEvaluation(stdin io.Reader, predictiveConfig *config.Config) {
 			DB: db,
 		},
 		Predicters: []prediction.Predicter{
+			&knn.Predict{
+				Runner: algorithmRunner,
+			},
 			&linear.Predict{
 				Runner: algorithmRunner,
 			},
