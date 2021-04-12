@@ -62,6 +62,7 @@ type Model struct {
 	Name        string       `json:"name"`
 	PerInterval int          `json:"perInterval"`
 	Linear      *Linear      `json:"linear"`
+	KNN         *KNN         `json:"knn"`
 	HoltWinters *HoltWinters `json:"holtWinters"`
 }
 
@@ -84,6 +85,11 @@ type HoltWinters struct {
 
 // Linear represents a linear regression prediction model configuration
 type Linear struct {
+	StoredValues int `json:"storedValues"`
+	LookAhead    int `json:"lookAhead"`
+}
+
+type KNN struct {
 	StoredValues int `json:"storedValues"`
 	LookAhead    int `json:"lookAhead"`
 }
