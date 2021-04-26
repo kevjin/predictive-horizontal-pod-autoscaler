@@ -166,7 +166,6 @@ func getEvaluation(stdin io.Reader, predictiveConfig *config.Config) {
 	// data, _ := ioutil.ReadAll(stdin)
 	// err := ioutil.WriteFile("/tmp/evaldata", data, 0644)
 
-	fmt.Print("debug")
 	// Open DB connection
 	db, err := sql.Open("sqlite3", predictiveConfig.DBPath)
 	if err != nil {
@@ -223,7 +222,6 @@ func getEvaluation(stdin io.Reader, predictiveConfig *config.Config) {
 		Executer: combinedExecute,
 	}
 
-	fmt.Print("debug")
 	// Set up evaluator
 	evaluator := &evaluate.PredictiveEvaluate{
 		HPAEvaluator: hpaevaluate.NewEvaluate(predictiveConfig.Tolerance),

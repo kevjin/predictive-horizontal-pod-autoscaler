@@ -19,7 +19,6 @@ package knn
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"sort"
 	"strconv"
 
@@ -50,34 +49,28 @@ type Predict struct {
 
 // GetPrediction predicts what the replica count should be based on historical evaluations
 func (p *Predict) GetPrediction(model *config.Model, evaluations []*stored.Evaluation) (int32, error) {
-	fmt.Print("debug")
 	if model.KNN == nil {
 		return 0, errors.New("No KNN configuration provided for model")
 	}
 
-	fmt.Print("debug")
 	parameters, err := json.Marshal(knnParameters{
 		LookAhead:   model.KNN.LookAhead,
 		Evaluations: evaluations,
 	})
-	fmt.Print("debug")
 	if err != nil {
 		// Should not occur, panic
 		panic(err)
 	}
 
-	fmt.Print(string(parameters))
 	value, err := p.Runner.RunAlgorithmWithValue(algorithmPath, string(parameters))
 	if err != nil {
 		return 0, err
 	}
-	fmt.Print("debug")
 
 	prediction, err := strconv.Atoi(value)
 	if err != nil {
 		return 0, err
 	}
-	fmt.Print("debug")
 
 	return int32(prediction), nil
 }
