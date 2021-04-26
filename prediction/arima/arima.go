@@ -14,12 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package knn
+package arima
 
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"sort"
 	"strconv"
 
@@ -28,11 +27,12 @@ import (
 	"github.com/jthomperoo/predictive-horizontal-pod-autoscaler/stored"
 )
 
-const Type = "KNN"
+const Type = "ARIMA"
 
-const algorithmPath = "/app/algorithms/knn/knn.py"
+const algorithmPath = "/Users/kjin1/research/predictive-horizontal-pod-autoscaler/algorithms/arima/arima.py"
+// const algorithmPath = "/app/algorithms/arima/arima.py"
 
-type knnParameters struct {
+type arimaParameters struct {
 	LookAhead   int                  `json:"lookAhead"`
 	Evaluations []*stored.Evaluation `json:"evaluations"`
 }
@@ -43,41 +43,35 @@ type Config struct {
 	LookAhead    int `yaml:"lookAhead"`
 }
 
-// Predict provides logic for using KNN to make a prediction
+// Predict provides logic for using ARIMA to make a prediction
 type Predict struct {
 	Runner algorithm.Runner
 }
 
 // GetPrediction predicts what the replica count should be based on historical evaluations
 func (p *Predict) GetPrediction(model *config.Model, evaluations []*stored.Evaluation) (int32, error) {
-	fmt.Print("debug")
-	if model.KNN == nil {
-		return 0, errors.New("No KNN configuration provided for model")
+	if model.ARIMA == nil {
+		return 0, errors.New("No ARIMA configuration provided for model")
 	}
 
-	fmt.Print("debug")
-	parameters, err := json.Marshal(knnParameters{
-		LookAhead:   model.KNN.LookAhead,
+	parameters, err := json.Marshal(arimaParameters{
+		LookAhead:   model.ARIMA.LookAhead,
 		Evaluations: evaluations,
 	})
-	fmt.Print("debug")
 	if err != nil {
 		// Should not occur, panic
 		panic(err)
 	}
 
-	fmt.Print(string(parameters))
 	value, err := p.Runner.RunAlgorithmWithValue(algorithmPath, string(parameters))
 	if err != nil {
 		return 0, err
 	}
-	fmt.Print("debug")
 
 	prediction, err := strconv.Atoi(value)
 	if err != nil {
 		return 0, err
 	}
-	fmt.Print("debug")
 
 	return int32(prediction), nil
 }
@@ -85,8 +79,8 @@ func (p *Predict) GetPrediction(model *config.Model, evaluations []*stored.Evalu
 // GetIDsToRemove provides the list of stored evaluation IDs to remove, if there are too many stored values
 // it will remove the oldest ones
 func (p *Predict) GetIDsToRemove(model *config.Model, evaluations []*stored.Evaluation) ([]int, error) {
-	if model.KNN == nil {
-		return nil, errors.New("No KNN configuration provided for model")
+	if model.ARIMA == nil {
+		return nil, errors.New("No ARIMA configuration provided for model")
 	}
 
 	// Sort by date created
@@ -95,9 +89,9 @@ func (p *Predict) GetIDsToRemove(model *config.Model, evaluations []*stored.Eval
 	})
 	var markedForRemove []int
 	// Remove any expired values
-	if len(evaluations) > model.KNN.StoredValues {
+	if len(evaluations) > model.ARIMA.StoredValues {
 		// Remove oldest to fit into requirements
-		for i := 0; i < len(evaluations)-model.KNN.StoredValues; i++ {
+		for i := 0; i < len(evaluations)-model.ARIMA.StoredValues; i++ {
 			markedForRemove = append(markedForRemove, evaluations[i].ID)
 		}
 	}

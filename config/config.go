@@ -62,7 +62,9 @@ type Model struct {
 	Name        string       `json:"name"`
 	PerInterval int          `json:"perInterval"`
 	Linear      *Linear      `json:"linear"`
+	ARIMA       *ARIMA       `json:"arima"`
 	KNN         *KNN         `json:"knn"`
+	Reactive    *Reactive    `json:"reactive"`
 	HoltWinters *HoltWinters `json:"holtWinters"`
 }
 
@@ -90,6 +92,16 @@ type Linear struct {
 }
 
 type KNN struct {
+	StoredValues int `json:"storedValues"`
+	LookAhead    int `json:"lookAhead"`
+}
+
+type Reactive struct {
+	StoredValues int `json:"storedValues"`
+	LookAhead    int `json:"lookAhead"`
+}
+
+type ARIMA struct {
 	StoredValues int `json:"storedValues"`
 	LookAhead    int `json:"lookAhead"`
 }

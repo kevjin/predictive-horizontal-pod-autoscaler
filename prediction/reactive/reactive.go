@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package knn
+package reactive
 
 import (
 	"encoding/json"
@@ -28,11 +28,11 @@ import (
 	"github.com/jthomperoo/predictive-horizontal-pod-autoscaler/stored"
 )
 
-const Type = "KNN"
+const Type = "Reactive"
 
-const algorithmPath = "/app/algorithms/knn/knn.py"
+const algorithmPath = "/app/algorithms/reactive/reactive.py"
 
-type knnParameters struct {
+type reactiveParameters struct {
 	LookAhead   int                  `json:"lookAhead"`
 	Evaluations []*stored.Evaluation `json:"evaluations"`
 }
@@ -43,7 +43,7 @@ type Config struct {
 	LookAhead    int `yaml:"lookAhead"`
 }
 
-// Predict provides logic for using KNN to make a prediction
+// Predict provides logic for using reactive to make a prediction
 type Predict struct {
 	Runner algorithm.Runner
 }
@@ -51,13 +51,13 @@ type Predict struct {
 // GetPrediction predicts what the replica count should be based on historical evaluations
 func (p *Predict) GetPrediction(model *config.Model, evaluations []*stored.Evaluation) (int32, error) {
 	fmt.Print("debug")
-	if model.KNN == nil {
-		return 0, errors.New("No KNN configuration provided for model")
+	if model.Reactive == nil {
+		return 0, errors.New("No Reactive configuration provided for model")
 	}
 
 	fmt.Print("debug")
-	parameters, err := json.Marshal(knnParameters{
-		LookAhead:   model.KNN.LookAhead,
+	parameters, err := json.Marshal(reactiveParameters{
+		LookAhead:   model.Reactive.LookAhead,
 		Evaluations: evaluations,
 	})
 	fmt.Print("debug")
@@ -85,8 +85,8 @@ func (p *Predict) GetPrediction(model *config.Model, evaluations []*stored.Evalu
 // GetIDsToRemove provides the list of stored evaluation IDs to remove, if there are too many stored values
 // it will remove the oldest ones
 func (p *Predict) GetIDsToRemove(model *config.Model, evaluations []*stored.Evaluation) ([]int, error) {
-	if model.KNN == nil {
-		return nil, errors.New("No KNN configuration provided for model")
+	if model.Reactive == nil {
+		return nil, errors.New("No Reactive configuration provided for model")
 	}
 
 	// Sort by date created
@@ -95,9 +95,9 @@ func (p *Predict) GetIDsToRemove(model *config.Model, evaluations []*stored.Eval
 	})
 	var markedForRemove []int
 	// Remove any expired values
-	if len(evaluations) > model.KNN.StoredValues {
+	if len(evaluations) > model.Reactive.StoredValues {
 		// Remove oldest to fit into requirements
-		for i := 0; i < len(evaluations)-model.KNN.StoredValues; i++ {
+		for i := 0; i < len(evaluations)-model.Reactive.StoredValues; i++ {
 			markedForRemove = append(markedForRemove, evaluations[i].ID)
 		}
 	}

@@ -53,9 +53,11 @@ import (
 	"github.com/jthomperoo/predictive-horizontal-pod-autoscaler/config"
 	"github.com/jthomperoo/predictive-horizontal-pod-autoscaler/evaluate"
 	"github.com/jthomperoo/predictive-horizontal-pod-autoscaler/prediction"
+	// "github.com/jthomperoo/predictive-horizontal-pod-autoscaler/prediction/arima"
 	"github.com/jthomperoo/predictive-horizontal-pod-autoscaler/prediction/holtwinters"
 	"github.com/jthomperoo/predictive-horizontal-pod-autoscaler/prediction/linear"
 	"github.com/jthomperoo/predictive-horizontal-pod-autoscaler/prediction/knn"
+	"github.com/jthomperoo/predictive-horizontal-pod-autoscaler/prediction/reactive"
 	"github.com/jthomperoo/predictive-horizontal-pod-autoscaler/stored"
 	_ "github.com/mattn/go-sqlite3" // Driver for sqlite3 database	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -164,6 +166,7 @@ func getEvaluation(stdin io.Reader, predictiveConfig *config.Config) {
 	// data, _ := ioutil.ReadAll(stdin)
 	// err := ioutil.WriteFile("/tmp/evaldata", data, 0644)
 
+	fmt.Print("debug")
 	// Open DB connection
 	db, err := sql.Open("sqlite3", predictiveConfig.DBPath)
 	if err != nil {
@@ -220,6 +223,7 @@ func getEvaluation(stdin io.Reader, predictiveConfig *config.Config) {
 		Executer: combinedExecute,
 	}
 
+	fmt.Print("debug")
 	// Set up evaluator
 	evaluator := &evaluate.PredictiveEvaluate{
 		HPAEvaluator: hpaevaluate.NewEvaluate(predictiveConfig.Tolerance),
@@ -227,6 +231,9 @@ func getEvaluation(stdin io.Reader, predictiveConfig *config.Config) {
 			DB: db,
 		},
 		Predicters: []prediction.Predicter{
+			&reactive.Predict{
+				Runner: algorithmRunner,
+			},
 			&knn.Predict{
 				Runner: algorithmRunner,
 			},
